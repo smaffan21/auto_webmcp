@@ -1,0 +1,31 @@
+{
+  "name": "webmcp-auto",
+  "version": "0.1.0",
+  "description": "Auto-instrumentor for WebMCP — drop one script tag on any site to make it agent-ready. Scans forms, buttons, and links, then auto-generates and registers WebMCP tool definitions.",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "browser": "dist/webmcp-auto.iife.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "browser": "./dist/webmcp-auto.iife.js"
+    }
+  },
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --format=esm --outfile=dist/index.mjs && esbuild src/index.js --bundle --format=cjs --outfile=dist/index.cjs && esbuild src/index.js --bundle --format=iife --global-name=WebMCPAuto --outfile=dist/webmcp-auto.iife.js",
+    "build:cdn": "esbuild src/index.js --bundle --format=iife --global-name=WebMCPAuto --minify --outfile=dist/webmcp-auto.min.js",
+    "dev": "esbuild src/index.js --bundle --format=iife --global-name=WebMCPAuto --outfile=dist/webmcp-auto.iife.js --watch --servedir=demo"
+  },
+  "keywords": ["webmcp", "mcp", "ai-agents", "auto-instrument", "browser-agents", "agentic-web"],
+  "author": "Syed M. Affan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smaffan/webmcp-auto"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
+  }
+}

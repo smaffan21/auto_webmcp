@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebMCP Guard + Auto Demo — Mock E-Commerce</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #F8FAFC; color: #111827; }
+
+    /* ── Layout ── */
+    .page { display: grid; grid-template-columns: 1fr 420px; min-height: 100vh; }
+    @media (max-width: 900px) { .page { grid-template-columns: 1fr; } }
+
+    /* ── Left: Mock Store ── */
+    .store { padding: 32px; }
+    .store-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .store-header h1 { font-size: 22px; font-weight: 800; }
+    .store-header nav { display: flex; gap: 16px; }
+    .store-header nav a { text-decoration: none; color: #6B7280; font-size: 14px; font-weight: 600; }
+    .store-header nav a:hover { color: #111827; }
+
+    .search-form {
+      display: flex; gap: 8px; margin-bottom: 24px;
+    }
+    .search-form input, .search-form select {
+      padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 8px;
+      font-size: 14px; font-family: inherit;
+    }
+    .search-form input[type="text"] { flex: 1; }
+    .search-form button {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      background: #111827; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;
+    }
+
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .product-card {
+      background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; text-align: center;
+    }
+    .product-card .img { width: 100%; height: 120px; background: #F3F4F6; border-radius: 8px; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 32px; }
+    .product-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .product-card .price { font-size: 16px; font-weight: 800; color: #10B981; margin-bottom: 8px; }
+    .product-card button {
+      width: 100%; padding: 8px; border: none; border-radius: 6px;
+      background: #3B82F6; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+
+    .contact-form { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 20px; }
+    .contact-form h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+    .contact-form label { display: block; font-size: 13px; font-weight: 600; color: #6B7280; margin-bottom: 4px; }
+    .contact-form input, .contact-form textarea, .contact-form select {
+      width: 100%; padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 6px;
+      font-size: 14px; font-family: inherit; margin-bottom: 12px;
+    }
+    .contact-form textarea { height: 80px; resize: vertical; }
+    .contact-form button {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      background: #10B981; color: #fff; font-weight: 700; cursor: pointer;
+    }
+
+    .danger-zone { margin-top: 24px; padding: 16px; border: 2px solid #FCA5A5; border-radius: 12px; background: #FEF2F2; }
+    .danger-zone h3 { font-size: 14px; color: #991B1B; font-weight: 700; margin-bottom: 8px; }
+    .danger-zone button {
+      padding: 8px 16px; border: none; border-radius: 6px;
+      background: #DC2626; color: #fff; font-weight: 700; cursor: pointer;
+    }
+
+    /* ── Right: Live Monitor Panel ── */
+    .monitor {
+      background: #0F172A; color: #E2E8F0; padding: 24px; overflow-y: auto;
+      border-left: 1px solid #1E293B; max-height: 100vh; position: sticky; top: 0;
+    }
+    .monitor h2 { font-size: 14px; font-weight: 700; color: #10B981; margin-bottom: 16px;
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .monitor-section { margin-bottom: 20px; }
+    .monitor-section h3 { font-size: 12px; font-weight: 700; color: #64748B; margin-bottom: 8px;
+      text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .tool-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      margin: 2px 4px 2px 0; font-weight: 600;
+    }
+    .tool-pill.read-only { background: #1E3A5F; color: #93C5FD; }
+    .tool-pill.write { background: #422006; color: #FCD34D; }
+    .tool-pill.destructive { background: #450A0A; color: #FCA5A5; }
+    .tool-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .tool-pill.read-only .dot { background: #3B82F6; }
+    .tool-pill.write .dot { background: #F59E0B; }
+    .tool-pill.destructive .dot { background: #EF4444; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-box { background: #1E293B; border-radius: 8px; padding: 12px; text-align: center; }
+    .stat-box .num { font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stat-box .label { font-size: 10px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-box.green .num { color: #10B981; }
+    .stat-box.red .num { color: #EF4444; }
+    .stat-box.yellow .num { color: #F59E0B; }
+    .stat-box.blue .num { color: #3B82F6; }
+
+    .audit-entry {
+      padding: 8px 10px; border-radius: 6px; margin-bottom: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.4;
+    }
+    .audit-entry.allowed { background: #064E3B; color: #A7F3D0; }
+    .audit-entry.blocked { background: #450A0A; color: #FCA5A5; }
+    .audit-entry.rate-limited { background: #422006; color: #FDE68A; }
+    .audit-entry.user-rejected { background: #312E81; color: #C7D2FE; }
+    .audit-entry .time { color: #64748B; }
+
+    .manifest-btn {
+      width: 100%; padding: 10px; border: 1px dashed #334155; border-radius: 8px;
+      background: transparent; color: #94A3B8; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; margin-top: 8px;
+    }
+    .manifest-btn:hover { border-color: #10B981; color: #10B981; }
+
+    #manifest-output {
+      background: #1E293B; border-radius: 8px; padding: 12px; margin-top: 8px;
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #94A3B8;
+      max-height: 200px; overflow: auto; display: none; white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- ════════ LEFT: Mock Store ════════ -->
+    <div class="store">
+      <header class="store-header">
+        <h1>🛍️ DemoShop</h1>
+        <nav role="navigation">
+          <a href="/products">Products</a>
+          <a href="/deals">Deals</a>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+        </nav>
+      </header>
+
+      <!-- Search Form -->
+      <form id="product-search" class="search-form" onsubmit="event.preventDefault(); alert('Searched: ' + this.query.value)">
+        <input name="query" type="text" placeholder="Search products..." required>
+        <select name="category">
+          <option value="">All Categories</option>
+          <option value="electronics">Electronics</option>
+          <option value="clothing">Clothing</option>
+          <option value="home">Home & Garden</option>
+        </select>
+        <input name="maxPrice" type="number" min="0" max="10000" placeholder="Max price">
+        <button type="submit">Search</button>
+      </form>
+
+      <!-- Products -->
+      <div class="products">
+        <div class="product-card">
+          <div class="img">📱</div>
+          <h3>Wireless Earbuds</h3>
+          <div class="price">$49.99</div>
+          <button aria-label="Add Wireless Earbuds to cart" onclick="alert('Added to cart!')">Add to Cart</button>
+        </div>
+        <div class="product-card">
+          <div class="img">⌚</div>
+          <h3>Smart Watch</h3>
+          <div class="price">$199.99</div>
+          <button aria-label="Add Smart Watch to cart" onclick="alert('Added to cart!')">Add to Cart</button>
+        </div>
+        <div class="product-card">
+          <div class="img">🎧</div>
+          <h3>Noise Cancelling Headphones</h3>
+          <div class="price">$149.99</div>
+          <button aria-label="Add Headphones to cart" onclick="alert('Added to cart!')">Add to Cart</button>
+        </div>
+      </div>
+
+      <!-- Contact Form -->
+      <div class="contact-form">
+        <h2>Contact Us</h2>
+        <form id="contact-form" onsubmit="event.preventDefault(); alert('Message sent!')">
+          <label for="name">Full Name</label>
+          <input id="name" name="name" type="text" required placeholder="John Doe">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required placeholder="john@example.com">
+          <label for="subject">Subject</label>
+          <select id="subject" name="subject">
+            <option value="general">General Inquiry</option>
+            <option value="support">Technical Support</option>
+            <option value="billing">Billing Question</option>
+            <option value="returns">Returns & Refunds</option>
+          </select>
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required placeholder="How can we help?"></textarea>
+          <button type="submit">Send Message</button>
+        </form>
+      </div>
+
+      <!-- Dangerous Action -->
+      <div class="danger-zone">
+        <h3>⚠️ Danger Zone</h3>
+        <p style="font-size:13px; color:#6B7280; margin-bottom:8px;">This action will delete your entire account and cannot be undone.</p>
+        <button id="delete-account" aria-label="Delete my account permanently" onclick="alert('Account deleted!')">Delete My Account</button>
+      </div>
+    </div>
+
+    <!-- ════════ RIGHT: Live Monitor ════════ -->
+    <div class="monitor">
+      <h2>🛡️ WebMCP Guard — Live Monitor</h2>
+
+      <div class="monitor-section">
+        <h3>Registered Tools</h3>
+        <div id="tools-list">Scanning...</div>
+      </div>
+
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-box green"><div class="num" id="stat-allowed">0</div><div class="label">Allowed</div></div>
+        <div class="stat-box red"><div class="num" id="stat-blocked">0</div><div class="label">Blocked</div></div>
+        <div class="stat-box yellow"><div class="num" id="stat-rate">0</div><div class="label">Rate Limited</div></div>
+        <div class="stat-box blue"><div class="num" id="stat-total">0</div><div class="label">Total Calls</div></div>
+      </div>
+
+      <div class="monitor-section">
+        <h3>Audit Log (Live)</h3>
+        <div id="audit-log" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="monitor-section">
+        <h3>Tool Manifest</h3>
+        <button class="manifest-btn" onclick="showManifest()">📋 Generate .well-known/webmcp manifest</button>
+        <pre id="manifest-output"></pre>
+      </div>
+
+      <div class="monitor-section" style="margin-top:20px;">
+        <h3>Test Agent Actions</h3>
+        <p style="font-size:11px; color:#64748B; margin-bottom:8px;">Simulate what an AI agent would do:</p>
+        <button class="manifest-btn" onclick="simulateSearch()" style="border-color:#3B82F6;color:#3B82F6;">
+          🔍 Agent: Search for "red shoes"
+        </button>
+        <button class="manifest-btn" onclick="simulateContact()" style="border-color:#10B981;color:#10B981;">
+          ✉️ Agent: Submit contact form
+        </button>
+        <button class="manifest-btn" onclick="simulateDelete()" style="border-color:#EF4444;color:#EF4444;">
+          🗑️ Agent: Try to delete account
+        </button>
+        <button class="manifest-btn" onclick="simulateSpam()" style="border-color:#F59E0B;color:#F59E0B;">
+          ⚡ Agent: Spam search (trigger rate limit)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ Load both libraries ════════ -->
+  <script type="module">
+    // In production these would be npm imports. Here we inline the core logic.
+    // ── webmcp-guard (inline) ──────────────────────────────────────────────
+
+    class RateLimiter {
+      constructor() { this.windows = new Map(); }
+      check(name, max) {
+        const now = Date.now(), start = now - 60000;
+        if (!this.windows.has(name)) this.windows.set(name, []);
+        const ts = this.windows.get(name);
+        while (ts.length > 0 && ts[0] < start) ts.shift();
+        if (ts.length >= max) return false;
+        ts.push(now);
+        return true;
+      }
+      getCount(name) {
+        const now = Date.now(), start = now - 60000;
+        return (this.windows.get(name) || []).filter(t => t >= start).length;
+      }
+    }
+
+    function sanitize(input) {
+      if (!input || typeof input !== 'object') return input;
+      const out = {};
+      for (const [k, v] of Object.entries(input)) {
+        if (['password','token','secret'].some(s => k.toLowerCase().includes(s))) out[k] = '[REDACTED]';
+        else if (typeof v === 'string') out[k] = v.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]');
+        else out[k] = v;
+      }
+      return out;
+    }
+
+    function createGuard(opts = {}) {
+      const rl = new RateLimiter();
+      const audit = [];
+      const tools = new Map();
+
+      function addAudit(entry) {
+        audit.push(entry);
+        if (audit.length > 500) audit.splice(0, audit.length - 500);
+        updateMonitor();
+      }
+
+      function registerTool(def, policy = {}) {
+        const { permission = 'read-only', rateLimit = opts.defaultRateLimit || 10, requireConfirmation = permission === 'destructive' } = policy;
+        const guardedHandler = async (input, client) => {
+          const start = performance.now();
+          if (!rl.check(def.name, rateLimit)) {
+            addAudit({ tool: def.name, time: new Date().toISOString(), permission, status: 'rate-limited', reason: `>${rateLimit}/min`, input: sanitize(input), ms: Math.round(performance.now()-start) });
+            throw new Error('Rate limited');
+          }
+          if (requireConfirmation) {
+            const ok = confirm(`⚠️ An AI agent wants to call "${def.name}" (${permission})\n\nInput: ${JSON.stringify(input, null, 2)}\n\nAllow?`);
+            if (!ok) {
+              addAudit({ tool: def.name, time: new Date().toISOString(), permission, status: 'user-rejected', input: sanitize(input), ms: Math.round(performance.now()-start) });
+              return { error: 'User rejected' };
+            }
+          }
+          try {
+            const result = await def.handler(input, client);
+            addAudit({ tool: def.name, time: new Date().toISOString(), permission, status: 'allowed', input: sanitize(input), ms: Math.round(performance.now()-start) });
+            return result;
+          } catch(e) {
+            addAudit({ tool: def.name, time: new Date().toISOString(), permission, status: 'blocked', reason: e.message, input: sanitize(input), ms: Math.round(performance.now()-start) });
+            throw e;
+          }
+        };
+        tools.set(def.name, { ...def, handler: guardedHandler, _policy: policy, _permission: permission });
+      }
+
+      return {
+        registerTool,
+        getTools: () => Array.from(tools.entries()).map(([name, t]) => ({ name, permission: t._permission })),
+        getAudit: () => [...audit],
+        getStats: () => ({
+          total: audit.length,
+          allowed: audit.filter(e => e.status === 'allowed').length,
+          blocked: audit.filter(e => e.status === 'blocked').length,
+          rateLimited: audit.filter(e => e.status === 'rate-limited').length,
+        }),
+        callTool: async (name, input) => {
+          const t = tools.get(name);
+          if (!t) throw new Error(`Tool not found: ${name}`);
+          return t.handler(input);
+        }
+      };
+    }
+
+    // ── webmcp-auto (inline) ──────────────────────────────────────────────
+
+    function slugify(t) {
+      return t.toLowerCase().replace(/[^a-z0-9\s_-]/g,'').replace(/[\s_-]+/g,'_').replace(/^_|_$/g,'').slice(0,40);
+    }
+
+    function scanForms(guard) {
+      document.querySelectorAll('form').forEach(form => {
+        const id = form.id || 'form_' + Math.random().toString(36).slice(2,6);
+        const inputs = form.querySelectorAll('input:not([type=hidden]):not([type=submit]), select, textarea');
+        const props = {};
+        const req = [];
+        inputs.forEach(inp => {
+          const n = inp.name || inp.id;
+          if (!n) return;
+          const p = { type: 'string' };
+          if (inp.type === 'number') { p.type = 'number'; if(inp.min) p.minimum = +inp.min; if(inp.max) p.maximum = +inp.max; }
+          if (inp.type === 'email') p.format = 'email';
+          if (inp.tagName === 'SELECT') { p.enum = Array.from(inp.options).map(o=>o.value).filter(Boolean); }
+          if (inp.placeholder) p.description = inp.placeholder;
+          props[n] = p;
+          if (inp.required) req.push(n);
+        });
+
+        guard.registerTool({
+          name: slugify(id),
+          description: `Submit form: ${id} (fields: ${Object.keys(props).join(', ')})`,
+          inputSchema: { type: 'object', properties: props, ...(req.length ? { required: req } : {}) },
+          handler: async (input) => {
+            inputs.forEach(inp => {
+              const n = inp.name || inp.id;
+              if (n in input) { inp.value = input[n]; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+            });
+            form.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true}));
+            return { success: true, fields: Object.keys(input) };
+          }
+        }, { permission: 'write', rateLimit: 5 });
+      });
+    }
+
+    function scanButtons(guard) {
+      document.querySelectorAll('button:not(form button), [role=button]').forEach(btn => {
+        const label = btn.getAttribute('aria-label') || btn.textContent?.trim();
+        if (!label) return;
+        const name = slugify(label);
+        const isDestructive = /delete|remove|destroy|cancel/i.test(label);
+
+        guard.registerTool({
+          name,
+          description: `Click: ${label}`,
+          inputSchema: { type: 'object', properties: {} },
+          handler: async () => { btn.click(); return { success: true, action: label }; }
+        }, {
+          permission: isDestructive ? 'destructive' : 'write',
+          rateLimit: isDestructive ? 1 : 10,
+          requireConfirmation: isDestructive,
+        });
+      });
+    }
+
+    function scanNav(guard) {
+      document.querySelectorAll('nav a, [role=navigation] a, header a').forEach(link => {
+        const text = link.textContent?.trim();
+        const href = link.getAttribute('href');
+        if (!text || !href || href === '#') return;
+        guard.registerTool({
+          name: 'navigate_' + slugify(text),
+          description: `Navigate to: ${text} (${href})`,
+          inputSchema: { type: 'object', properties: {} },
+          handler: async () => ({ url: new URL(href, location.href).toString(), text })
+        }, { permission: 'read-only', rateLimit: 20 });
+      });
+    }
+
+    // ── Initialize ────────────────────────────────────────────────────────
+
+    const guard = createGuard({ defaultRateLimit: 10 });
+
+    // Auto-instrument the page
+    scanForms(guard);
+    scanButtons(guard);
+    scanNav(guard);
+
+    // ── Monitor UI Updates ────────────────────────────────────────────────
+
+    window.updateMonitor = function() {
+      // Update tools list
+      const toolsEl = document.getElementById('tools-list');
+      const tools = guard.getTools();
+      toolsEl.innerHTML = tools.map(t =>
+        `<span class="tool-pill ${t.permission}"><span class="dot"></span>${t.name}</span>`
+      ).join('');
+
+      // Update stats
+      const stats = guard.getStats();
+      document.getElementById('stat-allowed').textContent = stats.allowed;
+      document.getElementById('stat-blocked').textContent = stats.blocked;
+      document.getElementById('stat-rate').textContent = stats.rateLimited;
+      document.getElementById('stat-total').textContent = stats.total;
+
+      // Update audit log
+      const logEl = document.getElementById('audit-log');
+      const entries = guard.getAudit().slice(-20).reverse();
+      logEl.innerHTML = entries.map(e => {
+        const time = new Date(e.time).toLocaleTimeString();
+        const icon = e.status === 'allowed' ? '✅' : e.status === 'rate-limited' ? '⏱️' : e.status === 'user-rejected' ? '👤' : '🚫';
+        return `<div class="audit-entry ${e.status}">
+          <span class="time">${time}</span> ${icon} <strong>${e.tool}</strong> → ${e.status}${e.reason ? ` (${e.reason})` : ''} <span class="time">[${e.ms}ms]</span>
+        </div>`;
+      }).join('');
+    };
+
+    // Initial render
+    updateMonitor();
+
+    // ── Simulation Functions ──────────────────────────────────────────────
+
+    window.simulateSearch = async () => {
+      try {
+        await guard.callTool('product_search', { query: 'red shoes', category: 'clothing', maxPrice: 100 });
+      } catch(e) { console.log('Blocked:', e.message); }
+    };
+
+    window.simulateContact = async () => {
+      try {
+        await guard.callTool('contact_form', { name: 'AI Agent', email: 'agent@test.com', subject: 'general', message: 'Hello from an AI agent!' });
+      } catch(e) { console.log('Blocked:', e.message); }
+    };
+
+    window.simulateDelete = async () => {
+      try {
+        await guard.callTool('delete_my_account_permanently', {});
+      } catch(e) { console.log('Blocked:', e.message); }
+    };
+
+    window.simulateSpam = async () => {
+      for (let i = 0; i < 8; i++) {
+        try {
+          await guard.callTool('product_search', { query: `spam query ${i}` });
+        } catch(e) { /* expected rate limit */ }
+        await new Promise(r => setTimeout(r, 100));
+      }
+    };
+
+    window.showManifest = function() {
+      const el = document.getElementById('manifest-output');
+      const tools = guard.getTools();
+      const manifest = {
+        version: '0.1.0',
+        site: location.origin,
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'webmcp-auto + webmcp-guard',
+        tools: tools,
+      };
+      el.textContent = JSON.stringify(manifest, null, 2);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+  </script>
+</body>
+</html>
